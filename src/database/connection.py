@@ -10,4 +10,10 @@ SessionFactory = sessionmaker(
     bind=engine
 )
 
-session = SessionFactory()
+def get_db():
+    session = SessionFactory()
+    try:
+        yield session
+    finally:
+        session.close()
+

@@ -1,5 +1,13 @@
-from fastapi import FastAPI, Body, HTTPException
+from typing import List
+
+from fastapi import FastAPI, Body, HTTPException, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from database.connection import get_db
+from database.orm import Todo
+from database.repository import get_todos
+from schema.response import ListTodoResponse, TodoSchema
 
 app = FastAPI()
 
@@ -34,21 +42,28 @@ def health_check_handler():
 
 
 @app.get("/todos", status_code=200)
-def get_todos(order: str | None = None):
-    response = list(todo_data.values())
+def get_todos_handler(
+        order: str | None = None,
+        session: Session = Depends(get_db)
+):
+    todos: List[Todo]=get_todos(session=session)
     if order or order == 'DESC':
-        return response[::-1]
-    return response
+        return ListTodoResponse(
+            todos=[TodoSchema.from_orm(todo) for todo in todos[::-1]]
+        )
+    return ListTodoResponse(
+        todos=[TodoSchema.from_orm(todo) for todo in todos]
+    )
 
 
 @app.post("/todos", status_code=201)
-def post_todo(request: CreateTodo):
+def post_todo_handler(request: CreateTodo):
     todo_data[request.id] = request.dict()
     return todo_data[request.id]
 
 
 @app.get("/todos/{id}", status_code=200)
-def get_todo(id: int) -> dict:
+def get_todo_handler(id: int) -> dict:
     todo = todo_data.get(id)
     if todo:
         return todo
@@ -56,7 +71,7 @@ def get_todo(id: int) -> dict:
 
 
 @app.patch("/todos/{id}", status_code=200)
-def update_todo(
+def update_todo_handler(
         id: int,
         is_done: bool = Body(..., embed=True)
 ):
@@ -66,7 +81,7 @@ def update_todo(
     raise HTTPException(status_code=404, detail="Not Found")
 
 @app.delete("/todos/{id}", status_code=204)
-def delete_todo(id: int):
+def delete_todo_handler(id: int):
     todo = todo_data.pop(id, None)
     if todo:
         return todo
