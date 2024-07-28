@@ -1,13 +1,13 @@
 from typing import List
 
 from fastapi import FastAPI, Body, HTTPException, Depends
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
 from database.orm import Todo
 from database.repository import get_todos, get_todo_by_todo_id
-from schema.response import ListTodoResponse, TodoSchema
+from schema.request import CreateTodoRequest
+from schema.response import TodoListSchema, TodoSchema
 
 app = FastAPI()
 
@@ -30,12 +30,6 @@ todo_data = {
 }
 
 
-class CreateTodo(BaseModel):
-    id: int
-    contents: str
-    is_done: bool
-
-
 @app.get("/", status_code=200)
 def health_check_handler():
     return {"message": "Hello World"}
@@ -48,16 +42,16 @@ def get_todos_handler(
 ):
     todos: List[Todo]=get_todos(session=session)
     if order or order == 'DESC':
-        return ListTodoResponse(
+        return TodoListSchema(
             todos=[TodoSchema.from_orm(todo) for todo in todos[::-1]]
         )
-    return ListTodoResponse(
+    return TodoListSchema(
         todos=[TodoSchema.from_orm(todo) for todo in todos]
     )
 
 
 @app.post("/todos", status_code=201)
-def post_todo_handler(request: CreateTodo):
+def post_todo_handler(request: CreateTodoRequest):
     todo_data[request.id] = request.dict()
     return todo_data[request.id]
 

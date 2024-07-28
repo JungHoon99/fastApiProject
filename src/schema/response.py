@@ -16,5 +16,5 @@ class TodoSchema(BaseModel):
         orm_mode = True
 
 
-class ListTodoResponse(BaseModel):
+class TodoListSchema(BaseModel):
     todos: List[TodoSchema]
