@@ -11,24 +11,6 @@ from schema.response import TodoListSchema, TodoSchema
 
 app = FastAPI()
 
-todo_data = {
-    1: {
-        "id": 1,
-        "contents": "실전 fast API 0 수강",
-        "is_done": True
-    },
-    2: {
-        "id": 2,
-        "contents": "실전 fast API 1 수강",
-        "is_done": False
-    },
-    3: {
-        "id": 3,
-        "contents": "실전 fast API 2 수강",
-        "is_done": False
-    }
-}
-
 
 @app.get("/", status_code=200)
 def health_check_handler():
@@ -50,17 +32,6 @@ def get_todos_handler(
     )
 
 
-@app.post("/todos", status_code=201)
-def post_todo_handler(
-        request: CreateTodoRequest,
-        session: Session = Depends(get_db)
-) -> TodoSchema:
-    todo: Todo = Todo.create(request)
-    todo: Todo = create_todo(session=session, todo=todo)
-
-    return TodoSchema.from_orm(todo)
-
-
 @app.get("/todos/{id}", status_code=200)
 def get_todo_handler(
         id: int,
@@ -70,6 +41,17 @@ def get_todo_handler(
     if todo:
         return TodoSchema.from_orm(todo)
     raise HTTPException(status_code=404, detail="Not Found")
+
+
+@app.post("/todos", status_code=201)
+def post_todo_handler(
+        request: CreateTodoRequest,
+        session: Session = Depends(get_db)
+) -> TodoSchema:
+    todo: Todo = Todo.create(request)
+    todo: Todo = create_todo(session=session, todo=todo)
+
+    return TodoSchema.from_orm(todo)
 
 
 @app.patch("/todos/{id}", status_code=200)
@@ -92,7 +74,8 @@ def delete_todo_handler(
         session: Session = Depends(get_db)
 ):
     todo: Todo | None = get_todo_by_todo_id(session=session, todo_id=id)
+
     if not todo:
-        return HTTPException(status_code=404, detail="Not Found")
+        raise HTTPException(status_code=404, detail="Not Found")
 
     delete_todo(session=session, todo_id=id)
